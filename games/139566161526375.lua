@@ -90,7 +90,7 @@ for _, v in { "Speed", "Killaura" } do
 end
 
 run(function()
-	local Speed, SpeedSlider, index, newindex
+	local Speed, SpeedSlider, newindex
 	local char = lplr.Character or lplr.CharacterAdded:Wait()
 
 	Speed = vape.Categories.Blatant:CreateModule({
