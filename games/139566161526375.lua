@@ -101,7 +101,7 @@ run(function()
 	SpeedSlider = Speed:CreateSlider({
 		Name = "Charge Time",
 		Min = 1,
-		Max = 150,
+		Max = 26, -- check decimals later
 		Default = 26,
 		Decimal = 10,
 	})
