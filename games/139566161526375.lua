@@ -99,7 +99,7 @@ run(function()
 		Tooltip = "Increases your movement.",
 	})
 	SpeedSlider = Speed:CreateSlider({
-		Name = "Charge Time",
+		Name = "Speed",
 		Min = 1,
 		Max = 26, -- check decimals later
 		Default = 26,
