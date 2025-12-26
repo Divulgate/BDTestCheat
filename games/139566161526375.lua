@@ -98,7 +98,6 @@ run(function()
 
 	Speed = vape.Categories.Blatant:CreateModule({
 		Name = "Speed",
-		Function = function(callback) end,
 		Tooltip = "Increases your movement.",
 	})
 	SpeedSlider = Speed:CreateSlider({
@@ -139,33 +138,6 @@ run(function()
         Function = function(callback) end,
         Tooltip = "Always land critical hits.",
     })
-
-	local function TryAttackTarget(targetCharacter) -- literally taken from SwordClient and changed
-		if not targetCharacter then
-			return false
-		end
-		local targetEntity = bridgeduel.EntityModule.FindByCharacter(targetCharacter)
-		if not targetEntity then
-			return false
-		end
-		bridgeduel.BlinkClient.item_action.attack_entity.fire({
-			["target_entity_id"] = targetEntity.Id,
-			["is_crit"] = Crit.Enabled or lplr.Character.PrimaryPart.AssemblyLinearVelocity.Y < 0,
-			["weapon_name"] = "WoodenSword",
-			["extra"] = {
-				["rizz"] = "Bro.",
-				["owo"] = "What's this? OwO",
-				["those"] = workspace.Name == "Ok",
-			},
-		})
-		bridgeduel.ToolService:AttackPlayerWithSword(
-			targetCharacter,
-			Crit.Enabled or lplr.Character.PrimaryPart.AssemblyLinearVelocity.Y < 0, -- crit
-			"WoodenSword",
-			"\226\128\139"
-		)
-		return true
-	end
 
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = "Killaura",
@@ -214,7 +186,7 @@ run(function()
                         end
                     end
 					task.wait(0.01)
-					TryAttackTarget(nearestPlayer)
+					bridgeduel:TryAttackTarget(nearestPlayer, Crit.Enabled)
 					task.wait(0.01)
 					if AutoBlock and nearestDistance <= bridgeduel.EntityModule.LocalEntity.Reach + 4.1 then
                         ForceBlocked = true
