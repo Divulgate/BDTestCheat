@@ -70,21 +70,6 @@ local function removeTags(str)
 	return (str:gsub("<[^<>]->", ""))
 end
 
-local function switchItem(tool, delayTime)
-	delayTime = delayTime or 0.05
-	local check = lplr.Character and lplr.Character:FindFirstChild("HandInvItem") or nil
-	if check and check.Value ~= tool and tool.Parent ~= nil then
-		task.spawn(function()
-			bedwars.Client:Get(remotes.EquipItem):CallServerAsync({ hand = tool })
-		end)
-		check.Value = tool
-		if delayTime > 0 then
-			task.wait(delayTime)
-		end
-		return true
-	end
-end
-
 for _, v in { "Speed", "Killaura" } do
 	vape:Remove(v)
 end
@@ -133,9 +118,11 @@ run(function()
 	local EntityModule = require(replicatedStorage.Modules.Entity)
 	local SettingsController = require(replicatedStorage.Client.Controllers.All.SettingsController)
 	local ToolService = require(replicatedStorage.Services.ToolService)
+    local MeleeConstants = require(replicatedStorage.Constants.Melee)
 	-- TEMP --
 
-    local Crit, Killaura
+    local Crit, Killaura, SwitchTool, AutoBlock
+    local ForceBlocked, ForceSwitched = false, nil
 
     Crit = vape.Categories.Blatant:CreateModule({
         Name = "Crit",
@@ -208,19 +195,61 @@ run(function()
 						nearestDistance = distance
 						nearestPlayer = character
 					end
-					EntityModule.LocalEntity.IsBlocking = false
-					lplr:SetAttribute("ClientBlocking", false)
-					ToolService:ToggleBlockSword(false, "WoodenSword")
+                    if ForceBlocked then
+                        ForceBlocked = false
+					    EntityModule.LocalEntity.IsBlocking = false
+					    lplr:SetAttribute("ClientBlocking", false)
+					    ToolService:ToggleBlockSword(false, "WoodenSword")
+                    end
+                    if SwitchTool.Enabled and nearestDistance <= EntityModule.LocalEntity.Reach + 4.67 then
+                        ForceSwitched = lplr.Character and lplr.Character:FindFirstChildOfClass("Tool") or nil
+                        if ForceSwitched and ForceSwitched.Name ~= "WoodenSword" then
+                            local tool
+                            for _, _tool in pairs(lplr.Backpack:GetChildren()) do
+                                if _tool:IsA("Tool") and _tool.Name == "WoodenSword" then
+                                    tool = _tool
+                                end
+                            end
+                            if tool then
+                                lplr.Character.Humanoid:EquipTool(tool)
+                            else
+                                ForceSwitched = nil
+                            end
+                        elseif ForceSwitched and ForceSwitched.Name == "WoodenSword" then
+                            ForceSwitched = nil
+                        end
+                    end
 					task.wait(0.01)
 					TryAttackTarget(nearestPlayer)
-					if nearestPlayer then
+					task.wait(0.01)
+					if AutoBlock and nearestDistance <= EntityModule.LocalEntity.Reach + 4.1 then
+                        ForceBlocked = true
 						EntityModule.LocalEntity.IsBlocking = true
 						lplr:SetAttribute("ClientBlocking", true)
 						ToolService:ToggleBlockSword(true, "WoodenSword")
 					end
+                    if ForceSwitched then
+                        lplr.Character.Humanoid:EquipTool(ForceSwitched)
+                        ForceSwitched = nil
+                    end
+                    if nearestDistance <= EntityModule.LocalEntity.Reach + 4.67 then
+                        task.wait(MeleeConstants.COOLDOWN)
+                    end
 				end)
 			until not Killaura.Enabled
 		end,
-		Tooltip = "Aura of killing >:)",
+		Tooltip = "Aura of killing >:)"
 	})
+
+    SwitchTool = Killaura:CreateToggle({
+        Name = "Switch Tool",
+        Default = true,
+        Tooltip = "Switches to your sword when attacking.",
+    })
+
+    AutoBlock = Killaura:CreateToggle({
+        Name = "Auto Block",
+        Default = true,
+        Tooltip = "Automatically blocks when close to players, and unblocks when not.",
+    })
 end)
