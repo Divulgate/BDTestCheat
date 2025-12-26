@@ -34,7 +34,25 @@ local gameCamera = workspace.CurrentCamera
 local lplr = playersService.LocalPlayer
 local assetfunction = getcustomasset
 
+local function downloadFile(path, func)
+	if not isfile(path) then
+		local suc, res = pcall(function()
+			return game:HttpGet('https://raw.githubusercontent.com/Divulgate/BDTestCheat/'..readfile('BDTestCheat/profiles/commit.txt')..'/'..select(1, path:gsub('BDTestCheat/', '')), true)
+		end)
+		if not suc or res == '404: Not Found' then
+			error(res)
+		end
+		if path:find('.lua') then
+			res = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..res
+		end
+		writefile(path, res)
+	end
+	return (func or readfile)(path)
+end
+
 local vape = shared.vape
+vape.Libraries.bridgeduel = require(downloadFile('BDTestCheat/libraries/bridgeduel.lua'))
+local bridgeduel = vape.Libraries.bridgeduel
 local entitylib = vape.Libraries.entity
 local targetinfo = vape.Libraries.targetinfo
 local sessioninfo = vape.Libraries.sessioninfo
@@ -113,14 +131,6 @@ run(function()
 end)
 
 run(function()
-	-- TEMP --
-	local BlinkClient = require(replicatedStorage.Blink.Client)
-	local EntityModule = require(replicatedStorage.Modules.Entity)
-	local SettingsController = require(replicatedStorage.Client.Controllers.All.SettingsController)
-	local ToolService = require(replicatedStorage.Services.ToolService)
-    local MeleeConstants = require(replicatedStorage.Constants.Melee)
-	-- TEMP --
-
     local Crit, Killaura, SwitchTool, AutoBlock
     local ForceBlocked, ForceSwitched = false, nil
 
@@ -130,16 +140,15 @@ run(function()
         Tooltip = "Always land critical hits.",
     })
 
-	local function TryAttackTarget(targetCharacter) -- literally decomped from SwordClient and minorly changed
+	local function TryAttackTarget(targetCharacter) -- literally taken from SwordClient and changed
 		if not targetCharacter then
 			return false
 		end
-		local targetEntity = EntityModule.FindByCharacter(targetCharacter)
+		local targetEntity = bridgeduel.EntityModule.FindByCharacter(targetCharacter)
 		if not targetEntity then
 			return false
 		end
-		local attackEvent = BlinkClient.item_action.attack_entity.fire
-		local attackData = {
+		bridgeduel.BlinkClient.item_action.attack_entity.fire({
 			["target_entity_id"] = targetEntity.Id,
 			["is_crit"] = Crit.Enabled or lplr.Character.PrimaryPart.AssemblyLinearVelocity.Y < 0,
 			["weapon_name"] = "WoodenSword",
@@ -148,28 +157,13 @@ run(function()
 				["owo"] = "What's this? OwO",
 				["those"] = workspace.Name == "Ok",
 			},
-		}
-		attackEvent(attackData)
-		ToolService:AttackPlayerWithSword(
+		})
+		bridgeduel.ToolService:AttackPlayerWithSword(
 			targetCharacter,
 			Crit.Enabled or lplr.Character.PrimaryPart.AssemblyLinearVelocity.Y < 0, -- crit
 			"WoodenSword",
 			"\226\128\139"
 		)
-		local crosshair = SettingsController.Settings.DebugMode and lplr.PlayerGui.MainGui:FindFirstChild("Crosshair")
-		if crosshair then
-			local tween = tweenService:Create(crosshair, TweenInfo.new(0.1, Enum.EasingStyle.Quad), {
-				["ImageColor3"] = Color3.fromRGB(206, 0, 0),
-			})
-			tween:Play()
-			tween.Completed:Connect(function()
-				tweenService
-					:Create(crosshair, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-						["ImageColor3"] = Color3.fromRGB(255, 255, 255),
-					})
-					:Play()
-			end)
-		end
 		return true
 	end
 
@@ -197,11 +191,11 @@ run(function()
 					end
                     if ForceBlocked then
                         ForceBlocked = false
-					    EntityModule.LocalEntity.IsBlocking = false
+					    bridgeduel.EntityModule.LocalEntity.IsBlocking = false
 					    lplr:SetAttribute("ClientBlocking", false)
-					    ToolService:ToggleBlockSword(false, "WoodenSword")
+					    bridgeduel.ToolService:ToggleBlockSword(false, "WoodenSword")
                     end
-                    if SwitchTool.Enabled and nearestDistance <= EntityModule.LocalEntity.Reach + 4.67 then
+                    if SwitchTool.Enabled and nearestDistance <= bridgeduel.EntityModule.LocalEntity.Reach + 4.67 then
                         ForceSwitched = lplr.Character and lplr.Character:FindFirstChildOfClass("Tool") or nil
                         if ForceSwitched and ForceSwitched.Name ~= "WoodenSword" then
                             local tool
@@ -222,18 +216,18 @@ run(function()
 					task.wait(0.01)
 					TryAttackTarget(nearestPlayer)
 					task.wait(0.01)
-					if AutoBlock and nearestDistance <= EntityModule.LocalEntity.Reach + 4.1 then
+					if AutoBlock and nearestDistance <= bridgeduel.EntityModule.LocalEntity.Reach + 4.1 then
                         ForceBlocked = true
-						EntityModule.LocalEntity.IsBlocking = true
+						bridgeduel.EntityModule.LocalEntity.IsBlocking = true
 						lplr:SetAttribute("ClientBlocking", true)
-						ToolService:ToggleBlockSword(true, "WoodenSword")
+						bridgeduel.ToolService:ToggleBlockSword(true, "WoodenSword")
 					end
                     if ForceSwitched then
                         lplr.Character.Humanoid:EquipTool(ForceSwitched)
                         ForceSwitched = nil
                     end
-                    if nearestDistance <= EntityModule.LocalEntity.Reach + 4.67 then
-                        task.wait(MeleeConstants.COOLDOWN)
+                    if nearestDistance <= bridgeduel.EntityModule.LocalEntity.Reach + 4.67 then
+                        task.wait(bridgeduel.MeleeConstants.COOLDOWN)
                     end
 				end)
 			until not Killaura.Enabled
